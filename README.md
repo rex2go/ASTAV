@@ -10,7 +10,20 @@ It supports following instructions:
 4. call
 5. (soon) limit
 
-"or" as controlling keyword to enable condition like behavior
+"or" and "||" as controlling keyword to enable condition like behavior
+
+There are two variants of writing ASD
+
+Default style:
+```
+which_pet text ensure(~has_pet, "Ja") expect(["Hund", "Katze"]) or ensure(~has_pet, "Nein") expect(["Keins"])
+```
+Code style: 
+```
+which_pet text ensure(~has_pet, "Ja").expect(["Hund", "Katze"]) || ensure(~has_pet, "Nein").expect(["Keins"])
+```
+
+It may depend on the length of your instruction set which would make more sense.
 
 ## TODOs
 ### Check possibility of changing order for checks
