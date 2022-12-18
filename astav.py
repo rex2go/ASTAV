@@ -3,7 +3,7 @@ import json
 
 _supported_types = ["text", "number"]
 
-_available_commands = {
+_available_instructions = {
     "ensure": {
         "args": [
             "ref",
@@ -27,13 +27,18 @@ _available_commands = {
     }
 }
 
-_context = {
-    "data": {}
+_cache = {
+    "context": {},
+    "fns": {}
 }
 
 
-def _load_context(data):
-    _context["data"] = data
+def _load_context(context):
+    _cache["context"] = context
+
+
+def _load_fns(fns):
+    _cache["fns"] = fns
 
 
 def _parse_line(line):
@@ -56,8 +61,8 @@ def _parse_line(line):
     t_obj = {
         "label": matches[0][0],
         "type": row_type,
-        "raw_instructions": matches[2:],
-        "instructions": []
+        "raw": matches[2:],
+        "instruction_set_list": []  # instruction list divisions
     }
 
     return t_obj
@@ -65,7 +70,7 @@ def _parse_line(line):
 
 def _resolve(ref):
     if ref[0] == "~":
-        ref = _context["data"][ref[1:]]
+        ref = _cache["context"][ref[1:]]
 
     return ref
 
@@ -103,16 +108,18 @@ def _check_type(c_type, value, prompt=False):
 
 
 def _interpret(t_obj):
-    instructions = []
-    new_instruction = True
+    instruction_set_list = []
 
-    for instruction in t_obj["raw_instructions"]:
-        command = instruction[0]
-        parameters = instruction[1]
+    # whether a new division should be opened
+    is_new_division = True
+
+    for raw_instruction in t_obj["raw"]:
+        instruction = raw_instruction[0]
+        parameters = raw_instruction[1]
         args = re.findall(r"\((.*)\)", parameters)
 
-        if command in "or":
-            new_instruction = True
+        if instruction in ["or"]:
+            is_new_division = True
             continue
 
         # map/split args
@@ -127,44 +134,48 @@ def _interpret(t_obj):
         if len(args) == 1 and not args[0]:
             args = []
 
-        if command not in _available_commands:
-            raise Exception("Unknown command \"{}\"".format(command))
+        if instruction not in _available_instructions:
+            raise Exception("Unknown command \"{}\"".format(instruction))
 
-        command_definition = _available_commands[command]
+        command_definition = _available_instructions[instruction]
         command_args = command_definition["args"]
 
         if len(command_args) != len(args):
-            raise Exception("Invalid number of arguments for command " + command)
+            raise Exception("Invalid number of arguments for instruction " + instruction)
 
         for i, arg_type in enumerate(command_args):
             _check_type(arg_type, args[i])
 
-        if new_instruction:
-            new_instruction = False
-            instructions.append([])
+        if is_new_division:
+            is_new_division = False
+            instruction_set_list.append([])
 
-        instructions[-1].append({
-            "command": command,
+        instruction_set_list[-1].append({
+            "name": instruction,
             "args": args,
         })
 
-    t_obj["instructions"] = instructions
+    t_obj["instruction_set_list"] = instruction_set_list
 
     return t_obj
 
 
-def _execute(value, cmd_data):
-    value = _check_type(cmd_data["type"], value, True)
-    _context["data"][cmd_data["label"]] = value
+def _execute(value, t_obj):
+    # check type of value
+    value = _check_type(t_obj["type"], value, True)
 
-    group_results = []
+    # add value to cache
+    _cache["context"][t_obj["label"]] = value
 
-    for instruction_group in cmd_data["instructions"]:
-        group_result = value
+    results = []
 
-        for instruction in instruction_group:
-            command = instruction["command"]
-            arg_types = _available_commands[command]["args"]
+    for instruction_set in t_obj["instruction_set_list"]:
+        # current value
+        c_val = value
+
+        for instruction in instruction_set:
+            instruction_name = instruction["name"]
+            arg_types = _available_instructions[instruction_name]["args"]
             resolved_args = []
 
             for i, arg in enumerate(instruction["args"]):
@@ -174,7 +185,7 @@ def _execute(value, cmd_data):
                     arg = int(arg)
                 if arg_type == "ref":
                     try:
-                        arg = _context["data"][arg[1:]]
+                        arg = _cache["context"][arg[1:]]
                     except:
                         raise Exception("Could not resolve ref \"{}\"".format(arg))
                 if arg_type == "array":
@@ -187,14 +198,15 @@ def _execute(value, cmd_data):
 
                 resolved_args.append(arg)
 
-            if command == "ensure":
+            if instruction_name == "ensure":
                 if resolved_args[0] != resolved_args[1]:
-                    group_result = ""
+                    c_val = ""
                     break
-            elif command == "expect":
-                if value not in resolved_args[0]:
+
+            elif instruction_name == "expect":
+                if c_val not in resolved_args[0]:
                     if len(resolved_args[0]) == 1:
-                        group_result = resolved_args[0][0]
+                        c_val = resolved_args[0][0]
                     else:
                         print("----------")
                         print("[-2]: Delete entry")
@@ -205,35 +217,47 @@ def _execute(value, cmd_data):
 
                         while True:
                             try:
-                                answer_index = int(input("Please help me understand \"{}\": ".format(value)))
+                                answer_index = int(input("Please help me understand \"{}\": ".format(c_val)))
 
                                 if answer_index == -2:
                                     return False
 
                                 if answer_index == -1:
-                                    group_result = ""
+                                    c_val = ""
                                     break
 
-                                group_result = resolved_args[0][answer_index]
+                                c_val = resolved_args[0][answer_index]
                                 break
                             except:
                                 print("Invalid answer")
-            elif command == "print":
+
+            elif instruction_name == "print":
                 print("PRINT {}".format(resolved_args[0]))
 
-        group_results.append(group_result)
+            elif instruction_name == "call":
+                if resolved_args[0] not in _cache["fns"]:
+                    raise Exception("Function \"{}\" for call execution was not found".format(resolved_args[0]))
 
-    for group_result in group_results:
-        if group_result:
-            return group_result
+                c_val = _cache["fns"][resolved_args[0]](value)
 
-    return "" if group_results else value
+        results.append(c_val)
+
+    for result in results:
+        if result:
+            return result
+
+    result = "" if results else value
+
+    return result
 
 
-def validate(csv_file, asd_file):
+def validate(csv_file, asd_file, fns=None):
     entries = []
     memory = []
     valid_entries = []
+
+    if fns:
+        _load_fns(fns)
 
     with open(csv_file, encoding="utf8") as cf:
         for index, entry in enumerate(cf.readlines()):
@@ -274,5 +298,31 @@ def validate(csv_file, asd_file):
                 break
         else:
             valid_entries.append(entry)
+
+    '''
+    for i, md in enumerate(memory):
+        for entry in list(entries[1:]):
+            entry_dict = {}
+
+            for j, field in enumerate(entry):
+                entry_dict[entries[0][j]] = field
+
+            _load_context(entry_dict)
+
+            try:
+                print("----------")
+                print("Checking: \"{}\"".format(entries[0][i]))
+                result = _execute(entry[i], md)
+            except Exception as e:
+                print("An error occurred while executing line {}: {}".format(str(i), str(e)))
+                return
+
+            entry[i] = result
+
+            if result != "" and not result:
+                break
+        else:
+            valid_entries.append(entry)
+    '''
 
     return valid_entries
