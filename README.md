@@ -26,8 +26,8 @@ which_pet text ensure(~has_pet, "Ja").expect(["Hund", "Katze"]) || ensure(~has_p
 It may depend on the length of your instruction set what style would make more sense.
 
 ## TODOs
-### Check possibility of changing order for checks
-Currently, entry by entry gets checked - I prefer column by column (maybe make it an option?)
+### ~~Check possibility of changing order for checks~~
+~~Currently, entry by entry gets checked - I prefer column by column (maybe make it an option?)~~
 ### ~~Implement "call" function~~
 ~~Calls a passed python function (e.g. for custom mapping purposes)~~
 ### ~~Fix naming conventions~~
