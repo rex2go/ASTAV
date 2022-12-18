@@ -307,9 +307,11 @@ def validate(csv_file, asd_file, fns=None):
             if entry not in valid_entries:
                 continue
 
+            stripped_entry = list((map(lambda arg: arg.strip('"'), entry)))
+
             entry_dict = {}
 
-            for j, field in enumerate(entry):
+            for j, field in enumerate(stripped_entry):
                 if len(row_md_cache) <= j:
                     break
 
@@ -320,7 +322,7 @@ def validate(csv_file, asd_file, fns=None):
             try:
                 print("----------")
                 print("Checking: \"{}\"".format(entries[0][i]))
-                result = execute(entry[i], row_md)
+                result = execute(stripped_entry[i], row_md)
             except Exception as e:
                 print("An error occurred while executing line {}: {}".format(str(i), str(e)))
                 return
