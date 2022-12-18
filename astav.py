@@ -1,9 +1,9 @@
 import re
 import json
 
-supported_types = ["text", "number"]
+_supported_types = ["text", "number"]
 
-available_commands = {
+_available_commands = {
     "ensure": {
         "args": [
             "ref",
@@ -22,12 +22,12 @@ available_commands = {
     },
 }
 
-context = {
+_context = {
     "data": {}
 }
 
 
-def parse_line(line):
+def _parse_line(line):
     regex = r"(# ?.*|\w+)(\(.*?\))?"
 
     matches = re.findall(regex, line)
@@ -37,34 +37,35 @@ def parse_line(line):
 
     row_type = matches[1][0]
 
-    if row_type not in supported_types:
+    if row_type not in _supported_types:
         raise Exception("Unsupported type \"{}\"".format(row_type))
 
     if matches[-1][0][0] == "#":
         matches.pop()
 
-    cmd_data = {
+    # transfer object
+    t_obj = {
         "label": matches[0][0],
         "type": row_type,
         "raw_instructions": matches[2:],
         "instructions": []
     }
 
-    return cmd_data
+    return t_obj
 
 
-def resolve(ref):
+def _resolve(ref):
     if ref[0] == "~":
-        ref = context["data"][ref[1:]]
+        ref = _context["data"][ref[1:]]
 
     return ref
 
 
-def check_type(ctype, value, prompt = False):
-    if ctype == "ref":
+def _check_type(c_type, value, prompt=False):
+    if c_type == "ref":
         if value[0] != "~":
             raise Exception("\"{}\" must be of type ref".format(value))
-    elif ctype == "number":
+    elif c_type == "number":
         try:
             int(value)
         except:
@@ -77,7 +78,7 @@ def check_type(ctype, value, prompt = False):
                         print("Invalid answer")
             else:
                 raise Exception("\"{}\" must be of type number".format(value))
-    elif ctype == "array":
+    elif c_type == "array":
         try:
             if value[0] != "[" or value[-1] != "]":
                 raise Exception()
@@ -91,11 +92,11 @@ def check_type(ctype, value, prompt = False):
     return value
 
 
-def interpret(cmd_data):
+def _interpret(t_obj):
     instructions = []
     new_instruction = True
 
-    for instruction in cmd_data["raw_instructions"]:
+    for instruction in t_obj["raw_instructions"]:
         command = instruction[0]
         parameters = instruction[1]
         args = re.findall(r"\((.*)\)", parameters)
@@ -116,17 +117,17 @@ def interpret(cmd_data):
         if len(args) == 1 and not args[0]:
             args = []
 
-        if command not in available_commands:
+        if command not in _available_commands:
             raise Exception("Unknown command \"{}\"".format(command))
 
-        command_definition = available_commands[command]
+        command_definition = _available_commands[command]
         command_args = command_definition["args"]
 
         if len(command_args) != len(args):
             raise Exception("Invalid number of arguments for command " + command)
 
         for i, arg_type in enumerate(command_args):
-            check_type(arg_type, args[i])
+            _check_type(arg_type, args[i])
 
         if new_instruction:
             new_instruction = False
@@ -137,14 +138,14 @@ def interpret(cmd_data):
             "args": args,
         })
 
-    cmd_data["instructions"] = instructions
+    t_obj["instructions"] = instructions
 
-    return cmd_data
+    return t_obj
 
 
-def execute(value, cmd_data):
-    value = check_type(cmd_data["type"], value, True)
-    context["data"][cmd_data["label"]] = value
+def _execute(value, cmd_data):
+    value = _check_type(cmd_data["type"], value, True)
+    _context["data"][cmd_data["label"]] = value
 
     group_results = []
 
@@ -153,7 +154,7 @@ def execute(value, cmd_data):
 
         for instruction in instruction_group:
             command = instruction["command"]
-            arg_types = available_commands[command]["args"]
+            arg_types = _available_commands[command]["args"]
             resolved_args = []
 
             for i, arg in enumerate(instruction["args"]):
@@ -163,7 +164,7 @@ def execute(value, cmd_data):
                     arg = int(arg)
                 if arg_type == "ref":
                     try:
-                        arg = context["data"][arg[1:]]
+                        arg = _context["data"][arg[1:]]
                     except:
                         raise Exception("Could not resolve ref \"{}\"".format(arg))
                 if arg_type == "array":
@@ -232,13 +233,13 @@ def validate(csv_file, asd_file):
     with open(asd_file, encoding="utf8") as af:
         for i, md in enumerate(af.readlines()):
             try:
-                ds = parse_line(md)
+                ds = _parse_line(md)
             except Exception as e:
                 print("An error occurred while parsing line {}: {}".format(str(i), str(e)))
                 return
 
             try:
-                ds = interpret(ds)
+                ds = _interpret(ds)
             except Exception as e:
                 print("An error occurred while interpreting line {}: {}".format(str(i), str(e)))
                 return
@@ -248,7 +249,7 @@ def validate(csv_file, asd_file):
     for entry in list(entries[1:]):
         for i, md in enumerate(memory):
             try:
-                result = execute(entry[i], md)
+                result = _execute(entry[i], md)
             except Exception as e:
                 print("An error occurred while executing line {}: {}".format(str(i), str(e)))
                 return
