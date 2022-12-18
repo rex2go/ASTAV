@@ -42,7 +42,7 @@ def _load_fns(fns):
 
 
 def _parse_line(line):
-    regex = r"(# ?.*|\w+)(\(.*?\))?"
+    regex = r"(# ?.*|\w+|\|+)(\(.*?\))?"
 
     matches = re.findall(regex, line)
 
@@ -118,7 +118,7 @@ def _interpret(t_obj):
         parameters = raw_instruction[1]
         args = re.findall(r"\((.*)\)", parameters)
 
-        if instruction in ["or"]:
+        if instruction in ["or", "|", "||"]:
             is_new_division = True
             continue
 
