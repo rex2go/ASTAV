@@ -23,7 +23,7 @@ Code style:
 which_pet text ensure(~has_pet, "Ja").expect(["Hund", "Katze"]) || ensure(~has_pet, "Nein").expect(["Keins"])
 ```
 
-It may depend on the length of your instruction set which would make more sense.
+It may depend on the length of your instruction set what style would make more sense.
 
 ## TODOs
 ### Check possibility of changing order for checks
