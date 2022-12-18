@@ -27,12 +27,6 @@ context = {
 }
 
 
-def clear_context():
-    context = {
-        "data": {}
-    }
-
-
 def parse_line(line):
     regex = r"(# ?.*|\w+)(\(.*?\))?"
 
@@ -44,7 +38,7 @@ def parse_line(line):
     row_type = matches[1][0]
 
     if row_type not in supported_types:
-        raise Exception("Unsupported type " + row_type)
+        raise Exception("Unsupported type \"{}\"".format(row_type))
 
     if matches[-1][0][0] == "#":
         matches.pop()
@@ -69,7 +63,7 @@ def resolve(ref):
 def check_type(ctype, value, prompt = False):
     if ctype == "ref":
         if value[0] != "~":
-            raise Exception(value + " must be of type ref")
+            raise Exception("\"{}\" must be of type ref".format(value))
     elif ctype == "number":
         try:
             int(value)
@@ -77,12 +71,12 @@ def check_type(ctype, value, prompt = False):
             if prompt:
                 while True:
                     try:
-                        answer = int(input(value + " must be of type number: "))
+                        answer = int(input("\"{}\" must be of type number: ".format(value)))
                         return answer
                     except:
                         print("Invalid answer")
             else:
-                raise Exception(value + " must be of type number")
+                raise Exception("\"{}\" must be of type number".format(value))
     elif ctype == "array":
         try:
             if value[0] != "[" or value[-1] != "]":
@@ -90,7 +84,7 @@ def check_type(ctype, value, prompt = False):
 
             json.loads(value)
         except:
-            raise Exception(value + " must be of type array")
+            raise Exception("\"{}\" must be of type array".format(value))
 
     # TODO: add types
 
@@ -106,7 +100,7 @@ def interpret(cmd_data):
         parameters = instruction[1]
         args = re.findall(r"\((.*)\)", parameters)
 
-        if command in ["or", "|"]:
+        if command in "or":
             new_instruction = True
             continue
 
@@ -123,7 +117,7 @@ def interpret(cmd_data):
             args = []
 
         if command not in available_commands:
-            raise Exception("Unknown command: " + command)
+            raise Exception("Unknown command \"{}\"".format(command))
 
         command_definition = available_commands[command]
         command_args = command_definition["args"]
@@ -171,7 +165,7 @@ def execute(value, cmd_data):
                     try:
                         arg = context["data"][arg[1:]]
                     except:
-                        raise Exception("Could not resolve ref " + arg)
+                        raise Exception("Could not resolve ref \"{}\"".format(arg))
                 if arg_type == "array":
                     arg = json.loads(arg)
 
@@ -196,7 +190,7 @@ def execute(value, cmd_data):
 
                         while True:
                             try:
-                                answer_index = int(input("Please help me understand '" + value + "': "))
+                                answer_index = int(input("Please help me understand \"{}\": ".format(value)))
 
                                 if answer_index == -2:
                                     return False
@@ -236,14 +230,28 @@ def validate(csv_file, asd_file):
             entries.append(entry_data)
 
     with open(asd_file, encoding="utf8") as af:
-        for md in af.readlines():
-            ds = parse_line(md)
-            ds = interpret(ds)
+        for i, md in enumerate(af.readlines()):
+            try:
+                ds = parse_line(md)
+            except Exception as e:
+                print("An error occurred while parsing line {}: {}".format(str(i), str(e)))
+                return
+
+            try:
+                ds = interpret(ds)
+            except Exception as e:
+                print("An error occurred while interpreting line {}: {}".format(str(i), str(e)))
+                return
+
             memory.append(ds)
 
     for entry in list(entries[1:]):
         for i, md in enumerate(memory):
-            result = execute(entry[i], md)
+            try:
+                result = execute(entry[i], md)
+            except Exception as e:
+                print("An error occurred while executing line {}: {}".format(str(i), str(e)))
+                return
 
             entry[i] = result
 
