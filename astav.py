@@ -125,7 +125,9 @@ def _interpret(t_obj):
         # map/split args
         if len(args):
             _args = []
+            # split comma (except for strings and arrays)
             args = re.split(r'(?=(?:[^\"]|\"(?:[^\"\\]|\\.)*\")*)(?:^|,)(?![^\[]*\])', args[0])
+            # first arg is always empty
             args.pop(0)
             args = list((map(lambda arg: arg.strip(), args)))
             args = list((map(lambda arg: arg.strip('"'), args)))
@@ -137,13 +139,13 @@ def _interpret(t_obj):
         if instruction not in _available_instructions:
             raise Exception("Unknown command \"{}\"".format(instruction))
 
-        command_definition = _available_instructions[instruction]
-        command_args = command_definition["args"]
+        instruction_definition = _available_instructions[instruction]
+        instruction_args = instruction_definition["args"]
 
-        if len(command_args) != len(args):
+        if len(instruction_args) != len(args):
             raise Exception("Invalid number of arguments for instruction " + instruction)
 
-        for i, arg_type in enumerate(command_args):
+        for i, arg_type in enumerate(instruction_args):
             _check_type(arg_type, args[i])
 
         if is_new_division:
