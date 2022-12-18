@@ -9,3 +9,4 @@ It is unclear when things are called commands or instructions
 ### Implement "limit(max, [min])"
 ### Documentation
 As the project grows, documentation is needed
+### Add CLI script
