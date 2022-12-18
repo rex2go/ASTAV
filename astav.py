@@ -20,11 +20,20 @@ _available_commands = {
             "any"
         ]
     },
+    "print": {
+        "args": [
+            "any"
+        ]
+    }
 }
 
 _context = {
     "data": {}
 }
+
+
+def _load_context(data):
+    _context["data"] = data
 
 
 def _parse_line(line):
@@ -66,6 +75,7 @@ def _check_type(c_type, value, prompt=False):
         if value[0] != "~":
             raise Exception("\"{}\" must be of type ref".format(value))
     elif c_type == "number":
+        # TODO: find general solution for prompt
         try:
             int(value)
         except:
@@ -169,6 +179,9 @@ def _execute(value, cmd_data):
                         raise Exception("Could not resolve ref \"{}\"".format(arg))
                 if arg_type == "array":
                     arg = json.loads(arg)
+                if arg_type == "any":
+                    # could be ref
+                    arg = _resolve(arg)
 
                 # TODO: add more types
 
@@ -183,6 +196,7 @@ def _execute(value, cmd_data):
                     if len(resolved_args[0]) == 1:
                         group_result = resolved_args[0][0]
                     else:
+                        print("----------")
                         print("[-2]: Delete entry")
                         print("[-1]: Delete value")
 
@@ -204,6 +218,8 @@ def _execute(value, cmd_data):
                                 break
                             except:
                                 print("Invalid answer")
+            elif command == "print":
+                print("PRINT {}".format(resolved_args[0]))
 
         group_results.append(group_result)
 
@@ -222,10 +238,6 @@ def validate(csv_file, asd_file):
     with open(csv_file, encoding="utf8") as cf:
         for index, entry in enumerate(cf.readlines()):
             entry = entry.strip("\n")
-
-            if index == 0:
-                entries.append(entry)
-                continue
 
             entry_data = re.split(r',(?=(?:[^"]|"[^"]*")*$)', entry)
             entries.append(entry_data)
@@ -249,6 +261,8 @@ def validate(csv_file, asd_file):
     for entry in list(entries[1:]):
         for i, md in enumerate(memory):
             try:
+                print("----------")
+                print("Checking: \"{}\"".format(entries[0][i]))
                 result = _execute(entry[i], md)
             except Exception as e:
                 print("An error occurred while executing line {}: {}".format(str(i), str(e)))
@@ -262,6 +276,3 @@ def validate(csv_file, asd_file):
             valid_entries.append(entry)
 
     return valid_entries
-
-
-print(validate('test.csv', 'test.asd'))
