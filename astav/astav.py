@@ -41,7 +41,7 @@ def load_fns(fns):
     cache["fns"] = fns
 
 
-def _parse_line(line):
+def parse_line(line):
     regex = r"(# ?.*|\w+|\|+)(\(.*?\))?"
 
     matches = re.findall(regex, line)
@@ -68,7 +68,7 @@ def _parse_line(line):
     return t_obj
 
 
-def _resolve(ref):
+def resolve(ref):
     if ref[0] == "~":
         ref = cache["context"][ref[1:]]
 
@@ -207,7 +207,7 @@ def execute(value, t_obj):
                     arg = json.loads(arg)
                 if arg_type == "any":
                     # could be ref
-                    arg = _resolve(arg)
+                    arg = resolve(arg)
 
                 # TODO: add more types
 
@@ -285,7 +285,7 @@ def validate(csv_file, asd_file, fns=None):
     with open(asd_file, encoding="utf8") as af:
         for i, md in enumerate(af.readlines()):
             try:
-                ds = _parse_line(md)
+                ds = parse_line(md)
             except Exception as e:
                 print("An error occurred while parsing line {}: {}".format(str(i), str(e)))
                 return
