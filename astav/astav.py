@@ -253,7 +253,7 @@ def execute(value, t_obj):
                 if resolved_args[0] not in cache["fns"]:
                     raise Exception("Function \"{}\" for call execution was not found".format(resolved_args[0]))
 
-                c_val = cache["fns"][resolved_args[0]](value)
+                c_val = cache["fns"][resolved_args[0]](c_val)
 
         results.append(c_val)
 
