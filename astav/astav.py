@@ -46,6 +46,10 @@ def parse_line(line):
 
     matches = re.findall(regex, line)
 
+    # don't parse comment lines
+    if len(matches) == 1 and matches[0][0][0] == "#":
+        return None
+
     if len(matches) < 2:
         raise Exception("Missing type and/or label")
 
@@ -286,6 +290,9 @@ def validate(csv_file, asd_file, fns=None):
         for i, md in enumerate(af.readlines()):
             try:
                 ds = parse_line(md)
+
+                if ds is None:
+                    continue
             except Exception as e:
                 print("An error occurred while parsing line {}: {}".format(str(i), str(e)))
                 return
@@ -296,12 +303,15 @@ def validate(csv_file, asd_file, fns=None):
                 print("An error occurred while interpreting line {}: {}".format(str(i), str(e)))
                 return
 
+            ds["index"] = i
+
             memory.append(ds)
 
     row_md_cache = []
 
-    for i, row_md in enumerate(memory):
+    for row_md in memory:
         row_md_cache.append(row_md)
+        i = row_md["index"]
 
         for entry in list(entries[1:]):
             if entry not in valid_entries:
