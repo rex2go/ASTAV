@@ -27,7 +27,7 @@ def parse_line(line):
         "label": matches[0][0],
         "type": row_type,
         "raw": matches[2:],
-        "instruction_set_list": []  # instruction list divisions
+        "instruction_set_list": []
     }
 
     return t_obj
