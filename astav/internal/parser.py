@@ -19,6 +19,7 @@ def parse_line(line):
     if row_type not in supported_types:
         raise Exception("Unsupported type \"{}\"".format(row_type))
 
+    # remove trailing comment
     if matches[-1][0][0] == "#":
         matches.pop()
 

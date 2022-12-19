@@ -23,6 +23,7 @@ def execute(value, t_obj):
             arg_types = available_instructions[instruction_name]["args"]
             resolved_args = []
 
+            # process arguments by type
             for i, arg in enumerate(instruction["args"]):
                 arg_type = arg_types[i]
 
@@ -43,6 +44,8 @@ def execute(value, t_obj):
 
                 resolved_args.append(arg)
 
+            # built-in instructions
+            # TODO: move to extra files
             if instruction_name == "ensure":
                 if resolved_args[0] != resolved_args[1]:
                     c_val = ""
@@ -88,6 +91,7 @@ def execute(value, t_obj):
         results.append(c_val)
 
     for result in results:
+        # return first result which is not false or empty
         if result:
             return result
 

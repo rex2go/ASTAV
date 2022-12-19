@@ -5,8 +5,8 @@ from astav import available_instructions, check_type
 def interpret(t_obj):
     instruction_set_list = []
 
-    # whether a new division should be opened
-    is_new_division = True
+    # whether a new list should be started
+    is_new_list = True
 
     for raw_instruction in t_obj["raw"]:
         instruction = raw_instruction[0]
@@ -14,7 +14,7 @@ def interpret(t_obj):
         args = re.findall(r"\((.*)\)", parameters)
 
         if instruction in ["or", "|", "||"]:
-            is_new_division = True
+            is_new_list = True
             continue
 
         # map/split args
@@ -43,8 +43,8 @@ def interpret(t_obj):
         for i, arg_type in enumerate(instruction_args):
             check_type(arg_type, args[i])
 
-        if is_new_division:
-            is_new_division = False
+        if is_new_list:
+            is_new_list = False
             instruction_set_list.append([])
 
         instruction_set_list[-1].append({
