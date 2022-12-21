@@ -36,8 +36,7 @@ It may depend on the length of your instruction set what style would make more s
 ### Documentation
 As the project grows, documentation is needed
 ### Add CLI script
-### Move commands / functions in own files
+### ~~Move commands / functions in own files~~
 ### Add optional arguments support
 e.g. any?
-### Add optional header area 
-Header area for optional definitions of custom imported functions and future features
+### Fix comma in ensure command
