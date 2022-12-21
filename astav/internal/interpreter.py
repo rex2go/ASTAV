@@ -21,9 +21,8 @@ def interpret(t_obj):
         if len(args):
             _args = []
             # split comma (except for strings and arrays)
-            args = re.split(r'(?=(?:[^\"]|\"(?:[^\"\\]|\\.)*\")*)(?:^|,)(?![^\[]*\])', args[0])
-            # first arg is always empty
-            args.pop(0)
+            args = re.split(r',(?=(?:[^\"\[\]]|\"(?:[^\"\\]|\\.)*\"|\[[^\[\]]*\])*$)', args[0])
+
             args = list((map(lambda arg: arg.strip(), args)))
             args = list((map(lambda arg: arg.strip('"'), args)))
 

@@ -39,4 +39,4 @@ As the project grows, documentation is needed
 ### ~~Move commands / functions in own files~~
 ### Add optional arguments support
 e.g. any?
-### Fix comma in ensure command
+### ~~Fix comma in ensure command~~
