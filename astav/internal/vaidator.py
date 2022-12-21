@@ -49,7 +49,7 @@ def validate(csv_file, asd_file, fns=None):
             if entry not in valid_entries:
                 continue
 
-            stripped_entry = list((map(lambda arg: arg.strip('"'), entry)))
+            stripped_entry = list((map(lambda arg: str(arg).strip('"'), entry)))
 
             entry_dict = {}
 
